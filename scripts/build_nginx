@@ -9,21 +9,28 @@ set -o pipefail
 # fail harder
 set -eu
 
-# The NGINX OTel module uses gRPC with the system c-ares package.
+# The NGINX OTel module uses gRPC with the system c-ares package. libarchive
+# (bsdtar) sidesteps a GNU tar 1.35 bug that corrupts extraction under
+# Rosetta-emulated amd64 on Apple Silicon build hosts.
 apt-get update
-apt-get install --no-install-recommends -y cmake pkg-config libc-ares-dev
+apt-get install --no-install-recommends -y cmake pkg-config libc-ares-dev libarchive-tools
 rm -rf /var/lib/apt/lists/*
 
 NGINX_VERSION=${NGINX_VERSION-1.30.2}
 HEADERS_MORE_VERSION=${HEADERS_MORE_VERSION-0.39}
 UUID4_VERSION=${UUID4_VERSION-f8f7ff44e6a8c6cf75232ae4b63d011f2f3b34c1}
-OTEL_VERSION=${OTEL_VERSION-0.1.2}
+# v0.1.2 (latest tagged release) pins OTel C++ SDK v1.11.0, whose
+# cmake_minimum_required() predates CMake 3.5 -- CMake 4.x (as apt-installs
+# on heroku-26) refuses to configure it ("Compatibility with CMake < 3.5 has
+# been removed from CMake"). Pin a main-branch commit that bumped the SDK to
+# v1.23.0 and builds cleanly instead of the stale tag.
+OTEL_VERSION=${OTEL_VERSION-e3b6c98b1556e4c82cec39acc7be91a62449fa84}
 OTEL_BUILD_JOBS=${OTEL_BUILD_JOBS-2}
 
 nginx_tarball_url=https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz
 headers_more_nginx_module_url=https://github.com/openresty/headers-more-nginx-module/archive/v${HEADERS_MORE_VERSION}.tar.gz
 uuid4_url=https://github.com/cybozu/nginx-uuid4-module/archive/${UUID4_VERSION}.tar.gz
-otel_module_url=https://github.com/nginx/nginx-otel/archive/refs/tags/v${OTEL_VERSION}.tar.gz
+otel_module_url=https://github.com/nginx/nginx-otel/archive/${OTEL_VERSION}.tar.gz
 
 temp_dir=$(mktemp -d /tmp/nginx.XXXXXXXXXX)
 
@@ -31,16 +38,20 @@ trap popd EXIT
 pushd "$temp_dir"
 
 echo "Downloading $nginx_tarball_url"
-curl -sSL "$nginx_tarball_url" | tar xzv
+curl -sSL "$nginx_tarball_url" -o nginx.tar.gz
+bsdtar xzf nginx.tar.gz
 
 echo "Downloading $headers_more_nginx_module_url"
-curl -sSL "$headers_more_nginx_module_url" | tar xvz -C "nginx-${NGINX_VERSION}"
+curl -sSL "$headers_more_nginx_module_url" -o headers-more.tar.gz
+bsdtar xzf headers-more.tar.gz -C "nginx-${NGINX_VERSION}"
 
 echo "Downloading $uuid4_url"
-curl -sSL "$uuid4_url" | tar xvz -C "nginx-${NGINX_VERSION}"
+curl -sSL "$uuid4_url" -o uuid4.tar.gz
+bsdtar xzf uuid4.tar.gz -C "nginx-${NGINX_VERSION}"
 
 echo "Downloading $otel_module_url"
-curl -sSL "$otel_module_url" | tar xvz
+curl -sSL "$otel_module_url" -o otel.tar.gz
+bsdtar xzf otel.tar.gz
 
 otel_module_dir="${temp_dir}/nginx-otel-${OTEL_VERSION}"
 otel_build_dir="${temp_dir}/nginx-otel-build"
