@@ -25,6 +25,8 @@ tar -zxvf "${nginx_tarball}" -C "$nginx_tmp"
 
 mv "$nginx_tmp/nginx" "$BUILD_DIR/bin/nginx"
 mv "$nginx_tmp/nginx-debug" "$BUILD_DIR/bin/nginx-debug"
+mkdir -p "$BUILD_DIR/modules"
+mv "$nginx_tmp/modules/ngx_otel_module.so" "$BUILD_DIR/modules/"
 
 nginx_version=$($BUILD_DIR/bin/nginx -V 2>&1 | head -1 | awk '{ print $NF }')
 echo "-----> nginx-buildpack: Installed ${nginx_version} to app/bin"
