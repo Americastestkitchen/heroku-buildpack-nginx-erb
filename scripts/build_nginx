@@ -18,6 +18,7 @@ NGINX_VERSION=${NGINX_VERSION-1.30.2}
 HEADERS_MORE_VERSION=${HEADERS_MORE_VERSION-0.39}
 UUID4_VERSION=${UUID4_VERSION-f8f7ff44e6a8c6cf75232ae4b63d011f2f3b34c1}
 OTEL_VERSION=${OTEL_VERSION-0.1.2}
+OTEL_BUILD_JOBS=${OTEL_BUILD_JOBS-2}
 
 nginx_tarball_url=https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz
 headers_more_nginx_module_url=https://github.com/openresty/headers-more-nginx-module/archive/v${HEADERS_MORE_VERSION}.tar.gz
@@ -73,7 +74,7 @@ fi
 
 cmake -S "$otel_module_dir" -B "$otel_build_dir" \
   -DNGX_OTEL_NGINX_BUILD_DIR="${temp_dir}/nginx-${NGINX_VERSION}/objs"
-cmake --build "$otel_build_dir" --parallel "$(nproc)"
+cmake --build "$otel_build_dir" --parallel "$OTEL_BUILD_JOBS"
 
 # This will build `nginx`
 (
