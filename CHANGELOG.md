@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased] - YYYY-MM-DD
 ### Changes
 - Build and package the NGINX Native OpenTelemetry module.
+- Enable `http_stub_status_module` via `--with-http_stub_status_module`.
 
 ## [1.18] - 2026-05-26
 ### Changes
